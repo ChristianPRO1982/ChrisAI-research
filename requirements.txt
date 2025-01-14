@@ -1,0 +1,7 @@
+python-dotenv
+feedparser
+setuptools
+requests
+openai-whisper==20231117
+whisper==1.1.10
+openai==0.28
