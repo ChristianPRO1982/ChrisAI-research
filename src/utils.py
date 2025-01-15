@@ -55,21 +55,26 @@ import json
 
 def extract_hal():
     # URL de l'API HAL (à vérifier si elle existe)
-    BASE_URL = "https://api.archives-ouvertes.fr/search/?q=intelligence+artificielle&wt=json&fq=submittedDate_tdate:[NOW-3MONTHS/DAY%20TO%20NOW/HOUR]&fl=label_s,submittedDate_tdate&rows=10000"
-    query = {
-        "q": "intelligence artificielle",  # Mots-clés
-        "rows": 10,                        # Nombre de résultats
-        "fl": "docid,title,authFullName,fileSize,doi"  # Champs à extraire
-    }
+    BASE_URL = "https://api.archives-ouvertes.fr/search/?q=intelligence+artificielle&rows=2&fq=submittedDate_tdate:[NOW-3MONTHS/DAY%20TO%20NOW/HOUR]"
+    # query = {
+    #     "q": "intelligence artificielle",  # Mots-clés
+    #     "rows": 10,                        # Nombre de résultats
+    #     "fl": "docid,title,authFullName,fileSize,doi"  # Champs à extraire
+    # }
 
-    response = requests.get(BASE_URL, params=query)
+    response = requests.get(BASE_URL)
+    # response = requests.get(BASE_URL, params=query)
 
     if response.status_code == 200:
         data = response.json()
         for doc in data.get("response", {}).get("docs", []):
+            # print(doc)
+            print()
             print(f"docid: {doc.get('docid')}")
-            print(f"Authors: {doc.get('authFullName')}")
-            print(f"DOI: {doc.get('doi')}")
+            print()
+            print(f"label_s: {doc.get('label_s')}")
+            print()
+            print(f"uri_s: {doc.get('uri_s')}")
     else:
         print("Erreur >>> ", response.status_code)
 
