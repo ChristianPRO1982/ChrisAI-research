@@ -22,6 +22,12 @@ PREFIX = os.getenv("PREFIX")
 FFMPEG_PATH = os.getenv("FFMPEG_PATH")
 
 if utils.init():
-    utils.extract_hal()
+    logging_msg("utils.extract_hal_gen START")
+    stop_and_go = utils.extract_hal_gen()
+    if stop_and_go:
+        logging_msg("utils.extract_hal START")
+        stop_and_go = utils.extract_hal(FOLDER_PATH, PREFIX)
+    if stop_and_go:
+        pass
 
 logging_msg("END PROGRAM", "WARNING")

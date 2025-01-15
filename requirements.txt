@@ -1,7 +1,3 @@
 python-dotenv
-feedparser
-setuptools
+bs4
 requests
-openai-whisper==20231117
-whisper==1.1.10
-openai==0.28
