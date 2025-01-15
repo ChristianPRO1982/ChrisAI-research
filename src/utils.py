@@ -1,3 +1,4 @@
+from bs4 import BeautifulSoup
 import requests
 import sqlite3
 import json
@@ -27,13 +28,14 @@ def init()->bool:
         CREATE TABLE IF NOT EXISTS thesis (
             ID INTEGER PRIMARY KEY AUTOINCREMENT,
             category TEXT NOT NULL,
+            thesis_id TEXT,
             thesis_name TEXT,
             thesis_url TEXT NOT NULL UNIQUE,
-            thesis_abstract TEXT,
+            thesis_abstract_en TEXT,
             thesis_abstract_fr TEXT,
             thesis_info TEXT,
-            thesis_file BOOLEAN DEFAULT FALSE,
-            downloaded BOOLEAN DEFAULT FALSE,
+            thesis_summary_by_ai TEXT,
+            downloaded INTEGER DEFAULT -1,
             processed BOOLEAN DEFAULT FALSE
         )""")
 
@@ -81,8 +83,8 @@ def extract_hal_gen()->bool:
                 logging_msg(f"{log_prefix} uri_s: {doc.get('uri_s')}", 'DEBUG')
                 
                 request = f'''
-INSERT INTO thesis (category, thesis_url)
-     VALUES ("HAL", "{doc.get('uri_s')}")
+INSERT INTO thesis (category, thesis_id, thesis_url, thesis_info)
+     VALUES ("HAL", "{doc.get('docid')}", "{doc.get('uri_s')}", "{doc.get('label_s')}")
 '''
                 logging_msg(f"{log_prefix} request: {request}", 'SQL')
                 try:
@@ -115,9 +117,9 @@ def extract_hal()->bool:
         cursor = conn.cursor()
 
         request = f'''
-SELECT id, url
+SELECT id, thesis_url
   FROM thesis
- WHERE downloaded IS FALSE
+ WHERE downloaded = -1
 '''
         logging_msg(f"{log_prefix} request: {request}", 'SQL')
         cursor.execute(request)
@@ -127,13 +129,42 @@ SELECT id, url
             id = row[0]
 
             try:
-                tt = 0/0
+                response = requests.get(row[1])
+                if response.status_code == 200:
+                    soup = BeautifulSoup(response.content, 'html.parser')
+
+                    thesis_name = soup.find('h2', class_='title-lang')
+                    if thesis_name:
+                        thesis_name_text = thesis_name.get_text(strip=True)
+                    else:
+                        thesis_name_text = "No title"
+
+                    summary_en = soup.find('div', class_='abstract-content', lang='en')
+                    if summary_en:
+                        thesis_abstract_en = summary_en.get_text(strip=True)
+                    else:
+                        thesis_abstract_en = "No abstract in English"
+                    
+                    summary_fr = soup.find('div', class_='abstract-content', lang='fr')
+                    if summary_fr:
+                        thesis_abstract_fr = summary_fr.get_text(strip=True)
+                    else:
+                        thesis_abstract_fr = "No abstract in French"
+
+                else:
+                    logging_msg(f"{log_prefix} Error: {response.status_code}", 'ERROR')
+                
+                download_status = extract_hal_download(row[1], id)
 
                 request = f'''
-UPDATE podcasts
-   SET downloaded = TRUE
+UPDATE thesis
+   SET downloaded = {download_status},
+       thesis_name = "{thesis_name_text}",
+       thesis_abstract_en = "{thesis_abstract_en}",
+       thesis_abstract_fr = "{thesis_abstract_fr}"
  WHERE id = {id}
 '''
+                logging_msg(f"{log_prefix} request: {request}", 'SQL')
                 cursor.execute(request)
                 conn.commit()
                 logging_msg(f"{log_prefix} Podcast updated: {id}", 'DEBUG')
@@ -149,7 +180,44 @@ UPDATE podcasts
     except Exception as e:
         logging_msg(f"{log_prefix} Error: {e}", 'ERROR')
         return False
+    
 
+def extract_hal_download(url: str, id: int)->int:
+    log_prefix = '[utils | extract_hal_download]'
+
+    FOLDER_PATH = os.getenv("FOLDER_PATH")
+    PREFIX = os.getenv("PREFIX")
+
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.content, 'html.parser')
+            
+            pdf_link = soup.find('iframe')
+            if not pdf_link:
+                return 1 # no pdf link found
+            
+            pdf_url = pdf_link['src'] if pdf_link.name == 'iframe' else pdf_link['href']
+            
+            pdf_response = requests.get(pdf_url)
+            if pdf_response.status_code == 200:
+                file_path = os.path.join(FOLDER_PATH, f"{PREFIX}{id}.pdf")
+                with open(file_path, 'wb') as file:
+                    file.write(pdf_response.content)
+                logging_msg(f"{log_prefix} PDF downloaded successfully: {file_path}", 'DEBUG')
+                return 2 # pdf downloaded successfully
+            
+            else:
+                raise Exception(f"Download: {pdf_response.status_code}")
+            
+        else:
+            raise Exception(f"Load HTML page: {response.status_code}")
+    
+
+    except Exception as e:
+        logging_msg(f"{log_prefix} Error: {e}", 'ERROR')
+        return 0 # error during download
+    
 
 ##################################################
 ##################################################

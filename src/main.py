@@ -19,14 +19,13 @@ logging_msg("START PROGRAM", "WARNING")
 # RSS_FEEDS = utils.parse_json(os.getenv("RSS_FEEDS"))
 FOLDER_PATH = os.getenv("FOLDER_PATH")
 PREFIX = os.getenv("PREFIX")
-FFMPEG_PATH = os.getenv("FFMPEG_PATH")
 
 if utils.init():
     logging_msg("utils.extract_hal_gen START")
     stop_and_go = utils.extract_hal_gen()
     if stop_and_go:
         logging_msg("utils.extract_hal START")
-        stop_and_go = utils.extract_hal(FOLDER_PATH, PREFIX)
+        stop_and_go = utils.extract_hal()
     if stop_and_go:
         pass
 
