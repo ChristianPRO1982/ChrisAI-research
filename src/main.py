@@ -27,6 +27,7 @@ if utils.init():
         logging_msg("utils.extract_hal START")
         stop_and_go = utils.extract_hal()
     if stop_and_go:
-        pass
+        logging_msg("utils.extract_stat START")
+        stop_and_go = utils.extract_stat()
 
 logging_msg("END PROGRAM", "WARNING")

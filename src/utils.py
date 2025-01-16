@@ -236,6 +236,52 @@ def extract_hal_download(url: str, id: int)->int:
 ##################################################
 ##################################################
 
+###  ###
+def extract_stat()->bool:
+    log_prefix = '[utils | extract_stat]'
+
+    try:
+        conn = sqlite3.connect('thesis.db')
+        cursor = conn.cursor()
+
+        request = f'''
+  SELECT downloaded, COUNT(1)
+    FROM thesis
+GROUP BY downloaded
+ORDER BY downloaded
+'''
+        logging_msg(f"{log_prefix} request: {request}", 'SQL')
+        cursor.execute(request)
+
+        for row in cursor.fetchall():
+            if row[0] == -1:
+                logging_msg(f"{log_prefix} {row[1]} podcasts to download")
+            elif row[0] == 0:
+                logging_msg(f"{log_prefix} {row[1]} podcasts with error during download")
+            elif row[0] == 1:
+                logging_msg(f"{log_prefix} {row[1]} podcasts without pdf link")
+            elif row[0] == 2:
+                logging_msg(f"{log_prefix} {row[1]} pdf downloaded")
+            elif row[0] == 3:
+                logging_msg(f"{log_prefix} {row[1]} pdf link is not a pdf file")
+            else:
+                logging_msg(f"{log_prefix} ERROR: code '{row[1]}' not recognized")
+
+        
+        conn.close()
+
+        return True
+    
+
+    except Exception as e:
+        logging_msg(f"{log_prefix} Error: {e}", 'ERROR')
+        return False
+    
+
+##################################################
+##################################################
+##################################################
+
 ### PARSE JSON ###
 def parse_json(json_file: str) -> list:
     log_prefix = '[utils | parse_json]'
