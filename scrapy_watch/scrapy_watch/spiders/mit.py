@@ -7,5 +7,5 @@ class MitSpider(scrapy.Spider):
     start_urls = ["https://dspace.mit.edu/discover?scope=%2F&query=artificial+intelligence&submit=Go&rpp=10&sort_by=dc.date.issued_dt&order=desc"]
 
     def parse(self, response):
-        for item in response.css('div'):
+        for item in response.css('.artifact-item'):
             yield item
