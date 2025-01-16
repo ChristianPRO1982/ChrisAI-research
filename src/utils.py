@@ -236,7 +236,10 @@ def extract_hal_download(url: str, id: int)->int:
 ##################################################
 ##################################################
 
-###  ###
+####################
+### EXTRACT STAT ###
+####################
+
 def extract_stat()->bool:
     log_prefix = '[utils | extract_stat]'
 
